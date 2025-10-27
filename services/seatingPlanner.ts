@@ -1,5 +1,5 @@
 
-import type { Student, Classroom, SeatingPlan, Allotment } from '../types';
+import type { Student, Classroom, SeatingPlan, Allotment, Teacher } from '../types';
 
 // Simple shuffle function
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -13,7 +13,8 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 
 export const generateSeatingPlan = (
   students: Student[],
-  classrooms: Classroom[]
+  classrooms: Classroom[],
+  teachers: Teacher[],
 ): SeatingPlan => {
   const totalCapacity = classrooms.reduce((sum, room) => sum + room.capacity, 0);
 
@@ -49,6 +50,22 @@ export const generateSeatingPlan = (
     }
     allotmentsByRoom[allotment.roomName].push(allotment);
   });
+  
+  const usedRoomNames = Object.keys(allotmentsByRoom);
+
+  // Assign invigilators
+  if (usedRoomNames.length > teachers.length) {
+    throw new Error(
+      `Not enough invigilators. ${usedRoomNames.length} rooms require an invigilator, but only ${teachers.length} are available.`
+    );
+  }
+
+  const shuffledTeachers = shuffleArray(teachers);
+  const invigilatorsByRoom: Record<string, Teacher> = {};
+  usedRoomNames.forEach((roomName, index) => {
+    invigilatorsByRoom[roomName] = shuffledTeachers[index];
+  });
+
 
   // Sort students within each room by seat number
   for (const roomName in allotmentsByRoom) {
@@ -57,12 +74,14 @@ export const generateSeatingPlan = (
 
   return {
     allotmentsByRoom,
+    invigilatorsByRoom,
     allStudentsAllotted: allStudentsAllotted.sort((a,b) => a.student.rollNumber.localeCompare(b.student.rollNumber)),
     summary: {
       totalStudents: students.length,
       totalCapacity,
-      roomsUsed: Object.keys(allotmentsByRoom).length,
+      roomsUsed: usedRoomNames.length,
       unseatedStudents: students.length - allStudentsAllotted.length,
+      totalTeachers: teachers.length,
     },
   };
 };

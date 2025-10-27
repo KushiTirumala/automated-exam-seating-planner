@@ -1,18 +1,18 @@
 
 import React, { useState } from 'react';
-import type { SeatingPlan, Allotment } from '../types';
-import { ClipboardIcon, TicketIcon, PrintIcon } from './icons/IconComponents';
+import type { SeatingPlan, Allotment, Teacher } from '../types';
+import { ClipboardIcon, TicketIcon, PrintIcon, UserCircleIcon } from './icons/IconComponents';
 
 interface SeatingPlanDisplayProps {
   plan: SeatingPlan;
 }
 
-type ActiveTab = 'allotments' | 'halltickets';
+type ActiveTab = 'allotments' | 'halltickets' | 'invigilation';
 
 const SeatingPlanDisplay: React.FC<SeatingPlanDisplayProps> = ({ plan }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('allotments');
 
-  const { allotmentsByRoom, allStudentsAllotted, summary } = plan;
+  const { allotmentsByRoom, allStudentsAllotted, summary, invigilatorsByRoom } = plan;
 
   const handlePrint = () => {
     window.print();
@@ -40,6 +40,7 @@ const SeatingPlanDisplay: React.FC<SeatingPlanDisplayProps> = ({ plan }) => {
                     <span><strong>{summary.totalStudents}</strong> Students</span>
                     <span><strong>{summary.roomsUsed}</strong> Rooms Used</span>
                     <span><strong>{summary.totalCapacity}</strong> Total Capacity</span>
+                    <span><strong>{summary.totalTeachers}</strong> Invigilators</span>
                 </div>
             </div>
              <button
@@ -59,12 +60,16 @@ const SeatingPlanDisplay: React.FC<SeatingPlanDisplayProps> = ({ plan }) => {
             <TabButton tabName="halltickets" currentTab={activeTab} setTab={setActiveTab}>
                 <TicketIcon className="w-5 h-5" /> Hall Tickets
             </TabButton>
+             <TabButton tabName="invigilation" currentTab={activeTab} setTab={setActiveTab}>
+                <UserCircleIcon className="w-5 h-5" /> Invigilation Duties
+            </TabButton>
         </nav>
       </div>
 
       <div className="mt-6">
         {activeTab === 'allotments' && <RoomAllotmentView allotmentsByRoom={allotmentsByRoom} />}
         {activeTab === 'halltickets' && <HallTicketView allStudentsAllotted={allStudentsAllotted} />}
+        {activeTab === 'invigilation' && <InvigilationView invigilatorsByRoom={invigilatorsByRoom} />}
       </div>
     </div>
   );
@@ -119,6 +124,32 @@ const HallTicketView: React.FC<{ allStudentsAllotted: Allotment[] }> = ({ allStu
       </div>
     ))}
   </div>
+);
+
+const InvigilationView: React.FC<{ invigilatorsByRoom: Record<string, Teacher> }> = ({ invigilatorsByRoom }) => (
+    <div className="p-4 border dark:border-gray-700 rounded-lg">
+        <h3 className="text-lg font-semibold mb-3">Invigilation Duty List</h3>
+         <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Room Name</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Invigilator Name</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Invigilator ID</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {Object.entries(invigilatorsByRoom).sort(([roomA], [roomB]) => roomA.localeCompare(roomB)).map(([roomName, invigilator]) => (
+                <tr key={roomName}>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">{roomName}</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm">{invigilator.name}</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm">{invigilator.id}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+    </div>
 );
 
 export default SeatingPlanDisplay;
